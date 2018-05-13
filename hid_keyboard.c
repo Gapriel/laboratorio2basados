@@ -49,7 +49,6 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define ALTERNATIVE_OPEN 0
 
 /*******************************************************************************
  * Prototypes
@@ -72,21 +71,34 @@ extern uint8_t centered;
 extern uint8_t paint_opened;
 extern uint8_t figure_painted;
 extern uint8_t notepad_opened;
+extern uint8_t Alternative_open;
 
-#if ALTERNATIVE_OPEN
-	static uint8_t browser_opened = 0;
-#endif
 static usb_status_t USB_openPaint(void){
 
 	static uint8_t openPaint_state = 0;
 	static uint8_t wait = 0;
-	#if ALTERNATIVE_OPEN
-	static uint8_t program_to_be_opened[] = {KEY_C,KEY_H,KEY_R,KEY_O,KEY_M,KEY_E,KEY_ENTER};
-		static uint8_t program_name_length = 7;
-	#else
-		static uint8_t program_to_be_opened[] = {KEY_M,KEY_S,KEY_P,KEY_A,KEY_I,KEY_N,KEY_T,KEY_ENTER};
-		static uint8_t program_name_length = 8;
-	#endif
+	static uint8_t program_name_length;
+	static uint8_t program_to_be_opened[10];
+	if(1 == Alternative_open){
+		program_to_be_opened[0] = KEY_C;
+		program_to_be_opened[1] = KEY_H;
+		program_to_be_opened[2] = KEY_R;
+		program_to_be_opened[3] = KEY_O;
+		program_to_be_opened[4] = KEY_M;
+		program_to_be_opened[5] = KEY_E;
+		program_to_be_opened[6] = KEY_ENTER;
+		program_name_length = 7;
+	}else{
+		program_to_be_opened[0] = KEY_M;
+		program_to_be_opened[1] = KEY_S;
+		program_to_be_opened[2] = KEY_P;
+		program_to_be_opened[3] = KEY_A;
+		program_to_be_opened[4] = KEY_I;
+		program_to_be_opened[5] = KEY_N;
+		program_to_be_opened[6] = KEY_T;
+		program_to_be_opened[7] = KEY_ENTER;
+		program_name_length = 8;
+	}
 	static uint8_t program_to_be_opened_index = 0;
 
 	switch(openPaint_state){
@@ -298,9 +310,11 @@ static usb_status_t USB_openNotepad(void) {
 }
 
 static usb_status_t USB_openWebsite(void) {
-	static uint8_t website_to_be_opened[] = { KEY_A, KEY_A, KEY_A, KEY_A,
-			KEY_DOT_GREATER, KEY_C, KEY_O, KEY_M, KEY_ENTER };
-	static uint8_t website_name_length = 9;
+	//static uint8_t website_to_be_opened[] = { KEY_B, KEY_B, KEY_A, KEY_A,
+	//		KEY_DOT_GREATER, KEY_C, KEY_O, KEY_M, KEY_ENTER };
+	//static uint8_t website_name_length = 9;
+	static uint8_t website_to_be_opened[] = {KEY_Y,KEY_O,KEY_U,KEY_T,KEY_U,KEY_B,KEY_E,KEY_DOT_GREATER,KEY_C,KEY_O,KEY_M,KEY_ENTER};
+	static uint8_t website_name_length = 12;
 	static uint8_t website_to_be_opened_index = 0;
 
 	static uint8_t wait = 0;
@@ -353,15 +367,15 @@ static usb_status_t USB_DeviceHidKeyboardAction(void)
     if((0 == paint_opened) && (1 == centered)){
     	return USB_openPaint();
     }
-	#if !ALTERNATIVE_OPEN
+	if (0 == Alternative_open){
 		if( (1 == figure_painted) && (0 == notepad_opened) ){
 			return USB_openNotepad();
 		}
-	#else
+	}else if (1 == Alternative_open){
 		if(1 == paint_opened){
 			return USB_openWebsite();
 		}
-	#endif
+	}
 
 
     s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;

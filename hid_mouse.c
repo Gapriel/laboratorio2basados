@@ -49,7 +49,6 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define ALTERNATIVE_OPEN 0
 
 /*******************************************************************************
  * Prototypes
@@ -71,6 +70,7 @@ static usb_device_hid_mouse_struct_t s_UsbDeviceHidMouse;
 extern uint8_t centered;
 extern uint8_t paint_opened;
 extern uint8_t figure_painted;
+extern uint8_t Alternative_open;
 
 static usb_status_t USB_center_mouse(void){
 	static int16_t horizontal_axis = 0U;
@@ -203,11 +203,11 @@ static usb_status_t USB_DeviceHidMouseAction(void)
     if(0 == centered){
     	return USB_center_mouse();
 	}
-	#if !ALTERNATIVE_OPEN
+	if (0 == Alternative_open){
 		if((0 == figure_painted) && (1 == paint_opened)){
 			return USB_paintFigure();
 		}
-	#endif
+	}
 
     s_UsbDeviceHidMouse.buffer[0] = 0x00;
     s_UsbDeviceHidMouse.buffer[1] = 0x00;

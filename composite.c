@@ -36,6 +36,9 @@
 #include "usb.h"
 #include "usb_device.h"
 
+#include "fsl_port.h"
+#include "fsl_gpio.h"
+
 #include "usb_device_class.h"
 #include "usb_device_hid.h"
 
@@ -386,6 +389,30 @@ uint8_t centered = 0;
 uint8_t figure_painted = 0;
 uint8_t paint_opened = 0;
 uint8_t notepad_opened = 0;
+uint8_t Alternative_open = 0;
+
+void PORTC_IRQHandler(){
+	PORT_ClearPinsInterruptFlags(PORTC, 1 << 6); //SW3 pin interrupt flag clearing
+	Alternative_open = 1;
+}
+
+void Button_configure(void){
+	port_pin_config_t button_configuration = { kPORT_PullUp, kPORT_SlowSlewRate,
+			kPORT_PassiveFilterDisable, kPORT_OpenDrainDisable,
+			kPORT_LowDriveStrength, kPORT_MuxAsGpio, kPORT_UnlockRegister };
+
+	CLOCK_EnableClock(kCLOCK_PortC);
+	PORT_SetPinConfig(PORTC, 6, &button_configuration);
+	gpio_pin_config_t sw2_config= {
+			kGPIO_DigitalInput,
+			1,
+	};
+	GPIO_PinInit(PORTC, 6, &sw2_config);
+	PORT_SetPinInterruptConfig(PORTC, 6, kPORT_InterruptLogicZero); /**B2 configured to interrupt when a logic 1 is read*/
+//
+	NVIC_EnableIRQ(PORTC_IRQn);
+	NVIC_SetPriority(PORTC_IRQn,6);
+}
 
 int main(void)
 #else
@@ -395,6 +422,8 @@ void main(void)
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
+
+    Button_configure();
 
     if (xTaskCreate(APP_task,                                   /* pointer to the task */
                     "app task",                                 /* task name for kernel awareness debugging */
