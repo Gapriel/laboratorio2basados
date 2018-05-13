@@ -71,6 +71,7 @@ extern uint8_t centered;
 extern uint8_t paint_opened;
 extern uint8_t figure_painted;
 extern uint8_t Alternative_open;
+extern uint8_t cut;
 
 static usb_status_t USB_center_mouse(void){
 	static int16_t horizontal_axis = 0U;

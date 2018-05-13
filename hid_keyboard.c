@@ -72,6 +72,8 @@ extern uint8_t paint_opened;
 extern uint8_t figure_painted;
 extern uint8_t notepad_opened;
 extern uint8_t Alternative_open;
+extern uint8_t Alternative_text;
+extern uint8_t cut;
 
 static usb_status_t USB_openPaint(void){
 
@@ -362,6 +364,104 @@ static usb_status_t USB_openWebsite(void) {
 			USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
+static usb_status_t USB_writeTextandCut() {
+	static uint8_t wait = 0;
+	static uint8_t writer_index = 0;
+	static uint8_t text_to_be_written[50];
+	static uint8_t text_length;
+
+	if (0 == Alternative_text) {
+		text_to_be_written[0] = KEY_H;
+		text_to_be_written[1] = KEY_O;
+		text_to_be_written[2] = KEY_L;
+		text_to_be_written[3] = KEY_A;
+		text_to_be_written[4] = KEY_SPACEBAR;
+		text_to_be_written[5] = KEY_M;
+		text_to_be_written[6] = KEY_U;
+		text_to_be_written[7] = KEY_N;
+		text_to_be_written[8] = KEY_D;
+		text_to_be_written[9] = KEY_O;
+		text_length = 10;
+	}
+		static uint8_t text_index = 0;
+
+	switch (writer_index) {
+	case 0:
+			wait++;
+			if (wait > 200) {
+				s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+				s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+				wait = 0;
+				writer_index++;
+			}
+	break;
+	case 1:
+		wait++;
+		if ((wait > 65)) {
+			s_UsbDeviceHidKeyboard.buffer[2] =
+					text_to_be_written[text_index];
+			text_index++;
+			wait = 0;
+		}
+		if (text_length < text_index) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			text_index = 0;
+			writer_index++;
+			wait = 0;
+		}
+		break;
+	case 2:
+		wait++;
+		if (wait > 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			wait = 0;
+			writer_index++;
+		}
+		break;
+	case 3:
+		wait++;
+		if(wait > 200){
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_LEFTCONTROL;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_E;
+			wait = 0;
+			writer_index++;
+		}
+		break;
+	case 4:
+		wait++;
+				if (wait > 200) {
+					s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+					s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+					wait = 0;
+					writer_index++;
+				}
+		break;
+	case 5:
+		wait++;
+		if (wait > 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_LEFTCONTROL;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_X;
+			wait = 0;
+			writer_index++;
+		}
+		break;
+	case 6:
+		wait++;
+		if (wait > 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			wait = 0;
+			cut = 1;
+		}
+	}
+
+	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
+	USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
+	USB_HID_KEYBOARD_REPORT_LENGTH);
+}
+
 static usb_status_t USB_DeviceHidKeyboardAction(void)
 {
     if((0 == paint_opened) && (1 == centered)){
@@ -377,6 +477,9 @@ static usb_status_t USB_DeviceHidKeyboardAction(void)
 		}
 	}
 
+	if((0 == cut) && (1 == notepad_opened)){
+		return USB_writeTextandCut();
+	}
 
     s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
     s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
