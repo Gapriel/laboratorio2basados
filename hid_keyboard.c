@@ -49,6 +49,7 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+#define ALTERNATIVE_OPEN 0
 
 /*******************************************************************************
  * Prototypes
@@ -72,7 +73,9 @@ extern uint8_t paint_opened;
 extern uint8_t figure_painted;
 extern uint8_t notepad_opened;
 
-#define ALTERNATIVE_OPEN 0
+#if ALTERNATIVE_OPEN
+	static uint8_t browser_opened = 0;
+#endif
 static usb_status_t USB_openPaint(void){
 
 	static uint8_t openPaint_state = 0;
@@ -135,11 +138,10 @@ static usb_status_t USB_openPaint(void){
 				s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
 				s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
 				uint32_t count = 0;
-				while(10000000 > count){
-					count++;
-				};
-				paint_opened = 1;
-				wait = 0;
+					while(15000000 > count){
+						count++;
+					};
+					paint_opened = 1;
 			}
 			break;
 	}
@@ -295,18 +297,72 @@ static usb_status_t USB_openNotepad(void) {
 					USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
+static usb_status_t USB_openWebsite(void) {
+	static uint8_t website_to_be_opened[] = { KEY_A, KEY_A, KEY_A, KEY_A,
+			KEY_DOT_GREATER, KEY_C, KEY_O, KEY_M, KEY_ENTER };
+	static uint8_t website_name_length = 9;
+	static uint8_t website_to_be_opened_index = 0;
+
+	static uint8_t wait = 0;
+	static uint8_t website_state = 0;
+
+	switch (website_state) {
+	case 0:
+		wait++;
+		if (wait < 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			website_state++;
+			wait = 0;
+		}
+		break;
+	case 1:
+		wait++;
+		if ((wait > 65)) {
+			s_UsbDeviceHidKeyboard.buffer[2] =
+					website_to_be_opened[website_to_be_opened_index];
+			website_to_be_opened_index++;
+			wait = 0;
+		}
+		if (website_name_length < website_to_be_opened_index) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			website_to_be_opened_index = 0;
+			website_state++;
+			wait = 0;
+		}
+		break;
+	case 2:
+		wait++;
+		if (wait < 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			website_state++;
+			wait = 0;
+		}
+		break;
+	}
+
+	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
+			USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
+			USB_HID_KEYBOARD_REPORT_LENGTH);
+}
+
 static usb_status_t USB_DeviceHidKeyboardAction(void)
 {
     if((0 == paint_opened) && (1 == centered)){
     	return USB_openPaint();
     }
 	#if !ALTERNATIVE_OPEN
-		if( (1 == figure_painted) ){
+		if( (1 == figure_painted) && (0 == notepad_opened) ){
 			return USB_openNotepad();
 		}
 	#else
-		//open webpage
+		if(1 == paint_opened){
+			return USB_openWebsite();
+		}
 	#endif
+
 
     s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
     s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
