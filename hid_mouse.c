@@ -68,8 +68,8 @@ static usb_device_hid_mouse_struct_t s_UsbDeviceHidMouse;
  * Code
  ******************************************************************************/
 extern uint8_t centered;
-extern uint8_t figure_painted;
 extern uint8_t paint_opened;
+extern uint8_t figure_painted;
 
 static usb_status_t USB_center_mouse(void){
 	static int16_t horizontal_axis = 0U;

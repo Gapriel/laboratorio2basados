@@ -385,6 +385,7 @@ void APP_task(void *handle)
 uint8_t centered = 0;
 uint8_t figure_painted = 0;
 uint8_t paint_opened = 0;
+uint8_t notepad_opened = 0;
 
 int main(void)
 #else

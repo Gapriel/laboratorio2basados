@@ -69,6 +69,8 @@ static usb_device_hid_keyboard_struct_t s_UsbDeviceHidKeyboard;
  ******************************************************************************/
 extern uint8_t centered;
 extern uint8_t paint_opened;
+extern uint8_t figure_painted;
+extern uint8_t notepad_opened;
 
 #define ALTERNATIVE_OPEN 0
 static usb_status_t USB_openPaint(void){
@@ -133,7 +135,7 @@ static usb_status_t USB_openPaint(void){
 				s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
 				s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
 				uint32_t count = 0;
-				while(9000000 > count){
+				while(10000000 > count){
 					count++;
 				};
 				paint_opened = 1;
@@ -146,11 +148,165 @@ static usb_status_t USB_openPaint(void){
             				 s_UsbDeviceHidKeyboard.buffer, USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
+static usb_status_t USB_openNotepad(void) {
+
+	static uint8_t openNotepad_state = 0;
+	static uint8_t wait = 0;
+	static uint8_t program_to_be_opened[] = {KEY_N,KEY_O,KEY_T,KEY_E,KEY_P,KEY_A,KEY_D,KEY_ENTER};
+	static uint8_t program_name_length = 8;
+	static uint8_t program_to_be_opened_index = 0;
+
+	switch (openNotepad_state) {
+	case 0:
+		wait++;
+		if (wait > 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 1:
+		wait++;
+		if (wait > 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_RIGHT_GUI;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_R;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 2:
+		wait++;
+		if (wait > 200) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 3:
+		wait++;
+		if ((wait > 10)) {
+			s_UsbDeviceHidKeyboard.buffer[2] =
+					program_to_be_opened[program_to_be_opened_index];
+			program_to_be_opened_index++;
+			wait = 0;
+		}
+		if (program_name_length < program_to_be_opened_index) {
+			    s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			    s_UsbDeviceHidKeyboard.buffer[3] = 0;
+				openNotepad_state = 5;
+				program_to_be_opened_index = 0;
+				wait = 0;
+		}
+		break;
+	case 5:
+		wait++;
+		if(wait > 200){
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 6:
+		wait++;
+		if (wait > 100) {
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_RIGHT_GUI;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_KEYPAD_4_LEFT_ARROW;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 7:
+		wait++;
+		if(wait > 200){
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 8:
+		wait++;
+		if(wait > 200){
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_RIGHT_GUI;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_R;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 9:
+		wait++;
+		if(wait > 200){
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 10:
+		wait++;
+		if ((wait > 10)) {
+			s_UsbDeviceHidKeyboard.buffer[2] =
+			program_to_be_opened[program_to_be_opened_index];
+			program_to_be_opened_index++;
+			wait = 0;
+		}
+		if (program_name_length < program_to_be_opened_index) {
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			openNotepad_state = 11;
+			program_to_be_opened_index = 0;
+			wait = 0;
+		}
+	    break;
+	case 11:
+		wait++;
+		if((wait > 200)){
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 12:
+		wait++;
+		if (wait > 100) {
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_RIGHT_GUI;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_KEYPAD_6_RIGHT_ARROW;
+			openNotepad_state++;
+			wait = 0;
+		}
+		break;
+	case 13:
+		wait++;
+		if(wait > 200){
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			wait = 0;
+			notepad_opened = 1;
+		}
+		break;
+	}
+
+	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
+					USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
+					USB_HID_KEYBOARD_REPORT_LENGTH);
+}
+
 static usb_status_t USB_DeviceHidKeyboardAction(void)
 {
     if((0 == paint_opened) && (1 == centered)){
     	return USB_openPaint();
     }
+	#if !ALTERNATIVE_OPEN
+		if( (1 == figure_painted) ){
+			return USB_openNotepad();
+		}
+	#else
+		//open webpage
+	#endif
 
     s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
     s_UsbDeviceHidKeyboard.buffer[3] = 0x00U;
