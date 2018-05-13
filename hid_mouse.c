@@ -72,6 +72,7 @@ extern uint8_t paint_opened;
 extern uint8_t figure_painted;
 extern uint8_t Alternative_open;
 extern uint8_t cut;
+extern uint8_t left_moved;
 
 static usb_status_t USB_center_mouse(void){
 	static int16_t horizontal_axis = 0U;
@@ -198,6 +199,37 @@ static usb_status_t USB_paintFigure(void){
 	                          s_UsbDeviceHidMouse.buffer, USB_HID_MOUSE_REPORT_LENGTH);
 }
 
+static usb_status_t USB_moveLeft(void){
+	static uint8_t mouse_leftMovement_index = 0;
+	static uint8_t horizontal_axis = 0;
+
+	switch(mouse_leftMovement_index){
+	case 0:
+		s_UsbDeviceHidMouse.buffer[1] = (uint8_t)(0xF9);
+		s_UsbDeviceHidMouse.buffer[2] = 0U;
+		horizontal_axis++;
+		if(horizontal_axis >= 20){
+			mouse_leftMovement_index++;
+		}
+		break;
+	case 1:
+		s_UsbDeviceHidMouse.buffer[0] = 1U;
+		s_UsbDeviceHidMouse.buffer[1] = 0U;
+		s_UsbDeviceHidMouse.buffer[2] = 0U;
+		mouse_leftMovement_index++;
+		break;
+	case 2:
+		s_UsbDeviceHidMouse.buffer[0] = 0U;
+		s_UsbDeviceHidMouse.buffer[1] = 0U;
+		s_UsbDeviceHidMouse.buffer[2] = 0U;
+		left_moved = 1;
+		break;
+	}
+
+	return USB_DeviceHidSend(s_UsbDeviceComposite->hidMouseHandle, USB_HID_MOUSE_ENDPOINT_IN,
+            s_UsbDeviceHidMouse.buffer, USB_HID_MOUSE_REPORT_LENGTH);
+}
+
 /* Update mouse pointer location. Draw a rectangular rotation*/
 static usb_status_t USB_DeviceHidMouseAction(void)
 {
@@ -208,6 +240,9 @@ static usb_status_t USB_DeviceHidMouseAction(void)
 		if((0 == figure_painted) && (1 == paint_opened)){
 			return USB_paintFigure();
 		}
+	}
+	if( (1 == cut) && (0 == left_moved) ){
+		return USB_moveLeft();
 	}
 
     s_UsbDeviceHidMouse.buffer[0] = 0x00;

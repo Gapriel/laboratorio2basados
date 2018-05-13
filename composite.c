@@ -392,6 +392,7 @@ uint8_t notepad_opened = 0;
 uint8_t Alternative_open = 0;
 uint8_t Alternative_text = 0;
 uint8_t cut = 0;
+uint8_t left_moved = 0;
 
 void PORTC_IRQHandler(){
 	PORT_ClearPinsInterruptFlags(PORTC, 1 << 6); //SW3 pin interrupt flag clearing

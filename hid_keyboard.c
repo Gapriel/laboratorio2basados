@@ -74,6 +74,7 @@ extern uint8_t notepad_opened;
 extern uint8_t Alternative_open;
 extern uint8_t Alternative_text;
 extern uint8_t cut;
+extern uint8_t left_moved;
 
 static usb_status_t USB_openPaint(void){
 
@@ -397,7 +398,7 @@ static usb_status_t USB_writeTextandCut() {
 	break;
 	case 1:
 		wait++;
-		if ((wait > 65)) {
+		if ((wait > 10)) {
 			s_UsbDeviceHidKeyboard.buffer[2] =
 					text_to_be_written[text_index];
 			text_index++;
