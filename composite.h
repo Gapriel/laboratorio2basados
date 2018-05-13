@@ -32,8 +32,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __USB_HID_MOUSE_H__
-#define __USB_HID_MOUSE_H__
+#ifndef __USB_DEVICE_COMPOSITE_H__
+#define __USB_DEVICE_COMPOSITE_H__
 
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -62,29 +62,21 @@
 #define USB_DEVICE_INTERRUPT_PRIORITY (3U)
 #endif
 
-#define USB_HID_MOUSE_REPORT_LENGTH (0x04U)
-//#define USB_HID_MOUSE_REPORT_LENGTH (0x47U)
-typedef struct _usb_hid_mouse_struct
+typedef struct _usb_device_composite_struct
 {
     usb_device_handle deviceHandle;
-    class_handle_t hidHandle;
+    class_handle_t hidMouseHandle;
+    class_handle_t hidKeyboardHandle;
     TaskHandle_t applicationTaskHandle;
     TaskHandle_t deviceTaskHandle;
-    uint8_t *buffer;
-    uint8_t currentConfiguration;
-    uint8_t currentInterfaceAlternateSetting[USB_HID_MOUSE_INTERFACE_COUNT];
     uint8_t speed;
     uint8_t attach;
-#if (defined(USB_DEVICE_CHARGER_DETECT_ENABLE) && (USB_DEVICE_CHARGER_DETECT_ENABLE > 0U))
-    volatile uint8_t vReginInterruptDetected;
-    volatile uint8_t vbusValid;
-    volatile usb_device_dcd_port_type_t dcdPortType;
-    volatile usb_device_dcd_dev_status_t dcdDevStatus;
-#endif
-} usb_hid_mouse_struct_t;
+    uint8_t currentConfiguration;
+    uint8_t currentInterfaceAlternateSetting[USB_COMPOSITE_INTERFACE_COUNT];
+} usb_device_composite_struct_t;
 
 /*******************************************************************************
  * API
  ******************************************************************************/
 
-#endif /* __USB_HID_MOUSE_H__ */
+#endif /* __USB_DEVICE_COMPOSITE_H__ */
