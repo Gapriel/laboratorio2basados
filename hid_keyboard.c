@@ -384,8 +384,6 @@ static usb_status_t USB_writeTextandCut(void) {
 		text_to_be_written[8] = KEY_D;
 		text_to_be_written[9] = KEY_O;
 		text_length = 10;
-	}else{
-
 	}
 		static uint8_t text_index = 0;
 
