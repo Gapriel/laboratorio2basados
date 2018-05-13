@@ -75,6 +75,7 @@ extern uint8_t Alternative_open;
 extern uint8_t Alternative_text;
 extern uint8_t cut;
 extern uint8_t left_moved;
+extern uint8_t pasted;
 
 static usb_status_t USB_openPaint(void){
 
@@ -365,7 +366,7 @@ static usb_status_t USB_openWebsite(void) {
 			USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
-static usb_status_t USB_writeTextandCut() {
+static usb_status_t USB_writeTextandCut(void) {
 	static uint8_t wait = 0;
 	static uint8_t writer_index = 0;
 	static uint8_t text_to_be_written[50];
@@ -383,6 +384,8 @@ static usb_status_t USB_writeTextandCut() {
 		text_to_be_written[8] = KEY_D;
 		text_to_be_written[9] = KEY_O;
 		text_length = 10;
+	}else{
+
 	}
 		static uint8_t text_index = 0;
 
@@ -463,6 +466,36 @@ static usb_status_t USB_writeTextandCut() {
 	USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
+static usb_status_t USB_pasteText(void){
+	static uint8_t wait = 0;
+	static uint8_t paste_step = 0;
+
+	switch(paste_step){
+	case 0:
+		wait++;
+		if(wait>200){
+			s_UsbDeviceHidKeyboard.buffer[2] = KEY_LEFTCONTROL;
+			s_UsbDeviceHidKeyboard.buffer[3] = KEY_V;
+			wait = 0;
+			paste_step++;
+		}
+		break;
+	case 1:
+		wait++;
+		if(wait>50){
+			s_UsbDeviceHidKeyboard.buffer[2] = 0;
+			s_UsbDeviceHidKeyboard.buffer[3] = 0;
+			wait = 0;
+			pasted = 1;
+		}
+		break;
+	}
+
+	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
+			USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
+			USB_HID_KEYBOARD_REPORT_LENGTH);
+}
+
 static usb_status_t USB_DeviceHidKeyboardAction(void)
 {
     if((0 == paint_opened) && (1 == centered)){
@@ -480,6 +513,10 @@ static usb_status_t USB_DeviceHidKeyboardAction(void)
 
 	if((0 == cut) && (1 == notepad_opened)){
 		return USB_writeTextandCut();
+	}
+
+	if( (1 == left_moved) && (0 == pasted) ){
+		return USB_pasteText();
 	}
 
     s_UsbDeviceHidKeyboard.buffer[2] = 0x00U;
