@@ -67,6 +67,7 @@ static usb_device_hid_keyboard_struct_t s_UsbDeviceHidKeyboard;
 /*******************************************************************************
  * Code
  ******************************************************************************/
+/**all the main-defined flag variables used to keep a sequence between keyboard and mouse*/
 extern uint8_t centered;
 extern uint8_t paint_opened;
 extern uint8_t figure_painted;
@@ -77,8 +78,10 @@ extern uint8_t cut;
 extern uint8_t left_moved;
 extern uint8_t pasted;
 
+/**state machine for opening mspaint*/
 static usb_status_t USB_openPaint(void){
 
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static uint8_t openPaint_state = 0;
 	static uint8_t wait = 0;
 	static uint8_t program_name_length;
@@ -105,6 +108,7 @@ static usb_status_t USB_openPaint(void){
 	}
 	static uint8_t program_to_be_opened_index = 0;
 
+	/**machine states of the mspaint opening process*/
 	switch(openPaint_state){
 		case 0:
 			wait++;
@@ -162,18 +166,21 @@ static usb_status_t USB_openPaint(void){
 			break;
 	}
 
+	/**sends the mouse behaviour to be done*/
 	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle, USB_HID_KEYBOARD_ENDPOINT_IN,
             				 s_UsbDeviceHidKeyboard.buffer, USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
 static usb_status_t USB_openNotepad(void) {
 
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static uint8_t openNotepad_state = 0;
 	static uint8_t wait = 0;
 	static uint8_t program_to_be_opened[] = {KEY_N,KEY_O,KEY_T,KEY_E,KEY_P,KEY_A,KEY_D,KEY_ENTER};
 	static uint8_t program_name_length = 8;
 	static uint8_t program_to_be_opened_index = 0;
 
+	/**machine states of the notepad process*/
 	switch (openNotepad_state) {
 	case 0:
 		wait++;
@@ -308,15 +315,15 @@ static usb_status_t USB_openNotepad(void) {
 		break;
 	}
 
+	/**sends the mouse behaviour to be done*/
 	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
 					USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
 					USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
 static usb_status_t USB_openWebsite(void) {
-	//static uint8_t website_to_be_opened[] = { KEY_B, KEY_B, KEY_A, KEY_A,
-	//		KEY_DOT_GREATER, KEY_C, KEY_O, KEY_M, KEY_ENTER };
-	//static uint8_t website_name_length = 9;
+
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static uint8_t website_to_be_opened[] = {KEY_Y,KEY_O,KEY_U,KEY_T,KEY_U,KEY_B,KEY_E,KEY_DOT_GREATER,KEY_C,KEY_O,KEY_M,KEY_ENTER};
 	static uint8_t website_name_length = 12;
 	static uint8_t website_to_be_opened_index = 0;
@@ -324,6 +331,7 @@ static usb_status_t USB_openWebsite(void) {
 	static uint8_t wait = 0;
 	static uint8_t website_state = 0;
 
+	/**machine states of the website opening process*/
 	switch (website_state) {
 	case 0:
 		wait++;
@@ -361,12 +369,15 @@ static usb_status_t USB_openWebsite(void) {
 		break;
 	}
 
+	/**sends the mouse behaviour to be done*/
 	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
 			USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
 			USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
 static usb_status_t USB_writeTextandCut(void) {
+
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static uint8_t wait = 0;
 	static uint8_t writer_index = 0;
 	static uint8_t text_to_be_written[50];
@@ -387,6 +398,7 @@ static usb_status_t USB_writeTextandCut(void) {
 	}
 		static uint8_t text_index = 0;
 
+	/**machine states of the text writing and cutting process*/
 	switch (writer_index) {
 	case 0:
 			wait++;
@@ -459,15 +471,19 @@ static usb_status_t USB_writeTextandCut(void) {
 		}
 	}
 
+	/**sends the mouse behaviour to be done*/
 	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
 	USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
 	USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
 static usb_status_t USB_pasteText(void){
+
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static uint8_t wait = 0;
 	static uint8_t paste_step = 0;
 
+	/**machine states of the text pasting process*/
 	switch(paste_step){
 	case 0:
 		wait++;
@@ -489,6 +505,7 @@ static usb_status_t USB_pasteText(void){
 		break;
 	}
 
+	/**sends the mouse behaviour to be done*/
 	return USB_DeviceHidSend(s_UsbDeviceComposite->hidKeyboardHandle,
 			USB_HID_KEYBOARD_ENDPOINT_IN, s_UsbDeviceHidKeyboard.buffer,
 			USB_HID_KEYBOARD_REPORT_LENGTH);
@@ -496,9 +513,12 @@ static usb_status_t USB_pasteText(void){
 
 static usb_status_t USB_DeviceHidKeyboardAction(void)
 {
+	/**step two: open mspaint*/
     if((0 == paint_opened) && (1 == centered)){
     	return USB_openPaint();
     }
+
+    /**step four: open two instances of notepad*/
 	if (0 == Alternative_open){
 		if( (1 == figure_painted) && (0 == notepad_opened) ){
 			return USB_openNotepad();
@@ -509,10 +529,12 @@ static usb_status_t USB_DeviceHidKeyboardAction(void)
 		}
 	}
 
+	/**step five: write the "hola mundo" text, and cuts it*/
 	if((0 == cut) && (1 == notepad_opened)){
 		return USB_writeTextandCut();
 	}
 
+	/**step seven: pastes the cut text*/
 	if( (1 == left_moved) && (0 == pasted) ){
 		return USB_pasteText();
 	}

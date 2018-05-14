@@ -54,8 +54,6 @@
  * Prototypes
  ******************************************************************************/
 
-static usb_status_t USB_DeviceHidMouseAction(void);
-
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -67,6 +65,7 @@ static usb_device_hid_mouse_struct_t s_UsbDeviceHidMouse;
 /*******************************************************************************
  * Code
  ******************************************************************************/
+/**all the main-defined flag variables used to keep a sequence between keyboard and mouse*/
 extern uint8_t centered;
 extern uint8_t paint_opened;
 extern uint8_t figure_painted;
@@ -74,7 +73,10 @@ extern uint8_t Alternative_open;
 extern uint8_t cut;
 extern uint8_t left_moved;
 
+/**this function centers the cursor; varies depending on the screen (tested on a 1920 x 800 one)*/
 static usb_status_t USB_center_mouse(void){
+
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static int16_t horizontal_axis = 0U;
 	static int16_t vertical_axis = 0U;
 	uint16_t Xlimit = 2000;
@@ -89,6 +91,7 @@ static usb_status_t USB_center_mouse(void){
 	};
 	static uint8_t direction = RIGHT;
 
+	/**machine states of the centering process*/
 	switch(direction){
 	case RIGHT:
 		if(horizontal_axis < Xlimit){
@@ -130,11 +133,16 @@ static usb_status_t USB_center_mouse(void){
 		break;
 	}
 
+	/**sends the mouse behaviour to be done*/
 	 return USB_DeviceHidSend(s_UsbDeviceComposite->hidMouseHandle, USB_HID_MOUSE_ENDPOINT_IN,
 			             	  s_UsbDeviceHidMouse.buffer, USB_HID_MOUSE_REPORT_LENGTH);
 }
 
+/**this function does a similar behaviour like the example, but it keeps the mouse pressed, so that
+ * when paint is opened, it paints a square, and stops when the 4th side is drawn*/
 static usb_status_t USB_paintFigure(void){
+
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static int16_t horizontal_axis = 0U;
 	static int16_t vertical_axis = 0U;
 	enum{
@@ -149,6 +157,7 @@ static usb_status_t USB_paintFigure(void){
 	USB_DeviceHidSend(s_UsbDeviceComposite->hidMouseHandle, USB_HID_MOUSE_ENDPOINT_IN,
 		              s_UsbDeviceHidMouse.buffer, USB_HID_MOUSE_REPORT_LENGTH);
 
+	/**machine states of the drawing process*/
 	switch (direction)
 	{
 		case RIGHT:
@@ -195,14 +204,20 @@ static usb_status_t USB_paintFigure(void){
 	     default:
 	     break;
 	 }
+
+	/**sends the mouse behaviour to be done*/
 	 return USB_DeviceHidSend(s_UsbDeviceComposite->hidMouseHandle, USB_HID_MOUSE_ENDPOINT_IN,
 	                          s_UsbDeviceHidMouse.buffer, USB_HID_MOUSE_REPORT_LENGTH);
 }
 
+/**this function moves to the left the pointer, but only after the text has been copied*/
 static usb_status_t USB_moveLeft(void){
+
+	/**local function variables keep static so that they maintain their value between functions calls*/
 	static uint8_t mouse_leftMovement_index = 0;
 	static uint8_t horizontal_axis = 0;
 
+	/**machine states of the left-movement process*/
 	switch(mouse_leftMovement_index){
 	case 0:
 		s_UsbDeviceHidMouse.buffer[1] = (uint8_t)(0xF9);
@@ -226,6 +241,7 @@ static usb_status_t USB_moveLeft(void){
 		break;
 	}
 
+	/**sends the mouse behaviour to be done*/
 	return USB_DeviceHidSend(s_UsbDeviceComposite->hidMouseHandle, USB_HID_MOUSE_ENDPOINT_IN,
             s_UsbDeviceHidMouse.buffer, USB_HID_MOUSE_REPORT_LENGTH);
 }
@@ -233,18 +249,25 @@ static usb_status_t USB_moveLeft(void){
 /* Update mouse pointer location. Draw a rectangular rotation*/
 static usb_status_t USB_DeviceHidMouseAction(void)
 {
+	/**set one: centering the mouse*/
     if(0 == centered){
     	return USB_center_mouse();
 	}
+
+    /**step three: draws the square on the opened mspaint instance*/
 	if (0 == Alternative_open){
 		if((0 == figure_painted) && (1 == paint_opened)){
 			return USB_paintFigure();
 		}
 	}
+
+	/**step six: moves the mouse to the left notepad instance, and makes a click */
 	if( (1 == cut) && (0 == left_moved) ){
 		return USB_moveLeft();
 	}
 
+
+	/**default: sets the left-button as un-pressed, and 0 movement is reported*/
     s_UsbDeviceHidMouse.buffer[0] = 0x00;
     s_UsbDeviceHidMouse.buffer[1] = 0x00;
     s_UsbDeviceHidMouse.buffer[2] = 0x00;
@@ -263,7 +286,6 @@ usb_status_t USB_DeviceHidMouseCallback(class_handle_t handle, uint32_t event, v
             if (s_UsbDeviceComposite->attach)
             {
                 return USB_DeviceHidMouseAction();
-            	//return USB_center_mouse();
             }
             break;
         case kUSB_DeviceHidEventGetReport:
